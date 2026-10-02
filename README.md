@@ -2,7 +2,7 @@
 
 Web app buat catat utang piutang pribadi. Next.js 16 (App Router) + TypeScript strict + Tailwind v4 + Supabase + Lucide.
 
-**Demo:** _isi link Vercel kamu di sini (wajib)_
+**Demo:** (https://kasbon-two.vercel.app/)
 
 ## Setup
 
@@ -56,4 +56,4 @@ Total ±9 jam, dikerjakan dalam 2 hari.
 
 Pakai AI assistant buat scaffolding awal dan draft kode. Setelah itu semua
 saya baca, ubah, dan tes sendiri. Bagian yang paling lama saya pelajari
-adalah RLS dan vercel, karena sebelumnya belum pernah bikin policy per operasi.
+adalah RLS dan vercel, karena sebelumnya belum pernah tes RLS dan deploy ke vercel.
