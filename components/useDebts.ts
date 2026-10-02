@@ -18,7 +18,7 @@ export function useDebts(filters: Filters) {
 
   const load = useCallback(async () => {
     try {
-      const qs = new URLSearchParams(filters).toString();
+      const qs = new URLSearchParams({ status: filters.status, type: filters.type }).toString();
       const [l, a] = await Promise.all([call<Debt[]>(`/api/debts?${qs}`), call<Debt[]>("/api/debts?status=unsettled")]);
       setList(l); setAll(a); setError(null);
     } catch (e) { setError(e instanceof Error ? e.message : "Gagal muat data"); }
