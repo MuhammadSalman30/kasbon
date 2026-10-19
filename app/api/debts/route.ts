@@ -9,7 +9,7 @@ export async function GET(req: NextRequest) {
   const q = listQuerySchema.safeParse(Object.fromEntries(req.nextUrl.searchParams));
   if (!q.success) return fail("Filter tidak valid: status = all|unsettled|settled, type = all|owed_to_me|i_owe", 400);
 
-  let query = auth.supabase.from("debts").select("*").order("created_at", { ascending: false });
+  let query = auth.supabase.from("debts").select("*, payments(id, amount, paid_at, note)").order("created_at", { ascending: false });
   if (q.data.status === "unsettled") query = query.is("settled_at", null);
   if (q.data.status === "settled") query = query.not("settled_at", "is", null);
   if (q.data.type !== "all") query = query.eq("type", q.data.type);

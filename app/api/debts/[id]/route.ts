@@ -38,7 +38,10 @@ export async function PATCH(req: Request, { params }: Ctx) {
     return NextResponse.json({ data });
   }
   const { data, error } = await auth.supabase.from("debts").update(patch).eq("id", id).select().single();
-  if (error) return fail("Gagal update catatan, coba lagi ya", 500);
+  if (error){
+    if (error.code === "23514") return fail("Jumlah gak boleh lebih kecil dari yang sudah dibayar", 422);
+    return fail("Gagal update catatan, coba lagi yaa", 500);
+  }
   return NextResponse.json({ data });
 }
 

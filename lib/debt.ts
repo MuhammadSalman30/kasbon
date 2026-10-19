@@ -1,9 +1,11 @@
 import { z } from "zod";
 
 export type DebtType = "owed_to_me" | "i_owe";
+export interface Payment { id: string; amount: number; paid_at: string; note: string | null }
 export interface Debt {
   id: string; user_id: string; type: DebtType; counterpart_name: string; amount: number;
   note: string | null; due_date: string | null; settled_at: string | null; created_at: string; updated_at: string;
+  payments: Payment[];
 }
 
 const base = z.object({
@@ -20,7 +22,20 @@ export const listQuerySchema = z.object({
   status: z.enum(["all", "unsettled", "settled"]).default("all"),
   type: z.enum(["all", "owed_to_me", "i_owe"]).default("all"),
 });
+
 export type DebtInput = z.infer<typeof createDebtSchema>;
+
+export const paymentSchema = z.object({
+  amount: z.number({ error: "Jumlah bayar harus berupa angka" }).int("Jumlah bayar harus bilangan bulat (Rupiah utuh)")
+    .positive("Jumlah bayar harus lebih dari 0").max(9_000_000_000_000, "Jumlah kegedean"),
+  paid_at: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Format tanggal harus YYYY-MM-DD").optional(),
+  note: z.string().trim().max(200, "Catatan maksimal 200 karakter").nullable().optional(),
+});
+export type PaymentInput = z.infer<typeof paymentSchema>;
+
+export const paidOf = (d: Debt) => d.payments.reduce((s, p) => s + p.amount, 0);
+// sisa yang masih harus dibayar; kalau udah ditandai lunas, sisanya 0
+export const remainingOf = (d: Debt) => (d.settled_at ? 0 : Math.max(d.amount - paidOf(d), 0));
 
 export const formatRupiah = (n: number) => "Rp " + new Intl.NumberFormat("id-ID").format(n);
 
