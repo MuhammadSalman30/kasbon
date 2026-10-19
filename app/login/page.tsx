@@ -20,7 +20,7 @@ export default function LoginPage() {
     const supabase = createClient();
     const { data, error } = mode === "login"
       ? await supabase.auth.signInWithPassword({ email, password })
-      : await supabase.auth.signUp({ email, password });
+      : await supabase.auth.signUp({ email, password, options: { emailRedirectTo: window.location.origin } });
     setBusy(false);
     if (error) return setMsg({ kind: "err", text: mode === "login" ? "Email atau password salah" : "Gagal daftar: " + error.message });
     if (!data.session) return setMsg({ kind: "ok", text: "Cek email kamu buat konfirmasi, abis itu login ya." });
