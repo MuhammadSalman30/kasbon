@@ -19,14 +19,18 @@ export async function PATCH(req: Request, { params }: Ctx) {
   const { settled, ...fields } = parsed.data;
   if (Object.keys(fields).length === 0 && settled === undefined) return fail("Gak ada yang diubah", 422);
 
-  const { data: current, error: findErr } = await auth.supabase.from("debts").select("settled_at").eq("id", id).maybeSingle();
+  const { data: current, error: findErr } = await auth.supabase.from("debts").select("id").eq("id", id).maybeSingle();
   if (findErr) return fail("Gagal ambil data, coba lagi ya", 500);
   if (!current) return fail("Catatan gak ketemu", 404);
 
   const patch: Record<string, unknown> = { ...fields };
   if ("note" in fields) patch.note = fields.note || null;
   // idempotent: tandai lunas 2x gak ngubah settled_at pertama
-  if (settled === true && !current.settled_at) patch.settled_at = new Date().toISOString();
+  if (settled === true) {
+    const { error : lunasErr } = await auth.supabase.from("debts")
+      .update({ settled_at: new Date().toISOString() }).eq("id", id).is("settled_at", null);
+      if (lunasErr) return fail("Gagal tandai lunas, coba lagi ya", 500);
+  }
   if (settled === false) patch.settled_at = null;
 
   if (Object.keys(patch).length === 0) {

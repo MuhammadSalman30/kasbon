@@ -38,11 +38,7 @@ RLS dibikin per-operasi (SELECT/INSERT/UPDATE/DELETE) khusus role `authenticated
 
 ## Trade-off (kalau ada 1 hari lagi)
 
-Search by nama, sort, group per orang, bar chart; ganti `confirm()` hapus dengan dialog custom + undo toast; optimistic update; test otomatis buat `formatRupiah`/`relativeTime` dan RLS.
-
-merapihkan form input pada modal "catat baru", terutama pada bagian currency rupiah (format agar tidak bingung)
-
-merapihkan tampilan
+Undo toast setelah hapus; optimistic update; pagination; test otomatis buat `formatRupiah`/`relativeTime` dan RLS.
 
 ## Time spent
 
