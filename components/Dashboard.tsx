@@ -1,11 +1,12 @@
 "use client";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Check, LogOut, NotebookPen, Pencil, Plus, Search, Trash2, Undo2, Users } from "lucide-react";
+import { Check, LogOut, NotebookPen, Pencil, Plus, Search, Trash2, Undo2, Users, Wallet } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { formatRupiah, relativeTime, type Debt } from "@/lib/debt";
+import { formatRupiah, paidOf, relativeTime, remainingOf, type Debt } from "@/lib/debt";
 import { useDebts, type Filters } from "./useDebts";
 import DebtForm from "./DebtForm";
+import PaymentSheet from "./PaymentSheet";
 
 type Sort = "newest" | "oldest" | "high" | "low";
 const sel = "rounded-xl border border-ink/15 bg-white px-3 py-2.5 text-sm outline-none focus:border-pos focus:ring-2 focus:ring-pos/20";
@@ -19,6 +20,7 @@ export default function Dashboard() {
   const [grouped, setGrouped] = useState(false);
   const [form, setForm] = useState<{ open: boolean; debt?: Debt }>({ open: false });
   const [toDelete, setToDelete] = useState<Debt | null>(null);
+  const [payFor, setPayFor] = useState<string | null>(null);
   const [actionErr, setActionErr] = useState<string | null>(null);
   const d = useDebts(filters);
   const net = d.owedToMe - d.iOwe;
@@ -38,11 +40,12 @@ export default function Dashboard() {
   const groups = useMemo(() => {
     const map = new Map<string, { name: string; count: number; net: number }>();
     for (const x of shown) {
-      if (x.settled_at) continue;
+      const sisa = remainingOf(x);
+      if (sisa === 0) continue;
       const k = x.counterpart_name.trim().toLowerCase();
       const g = map.get(k) ?? { name: x.counterpart_name, count: 0, net: 0 };
-      g.count += 1;
-      g.net += x.type === "owed_to_me" ? x.amount : -x.amount;
+      g.count +=1;
+      g.net += x.type === "owed_to_me" ? sisa : -sisa;
       map.set(k, g);
     }
     return [...map.values()].sort((a, b) => Math.abs(b.net) - Math.abs(a.net));
@@ -115,7 +118,8 @@ export default function Dashboard() {
         <ul className="space-y-3">
           {shown.map((x) => {
             const lunas = !!x.settled_at, mine = x.type === "owed_to_me";
-            return (
+            const paid = paidOf(x), cicilan = paid > 0 && !lunas;
+              return (
               <li key={x.id} className={`rounded-2xl border-l-4 bg-white p-4 shadow-sm transition ${mine ? "border-pos" : "border-neg"} ${lunas ? "opacity-60" : ""}`}>
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
@@ -124,14 +128,21 @@ export default function Dashboard() {
                   </div>
                   <div className="text-right">
                     <p className={`font-extrabold ${mine ? "text-pos" : "text-neg"}`}>{formatRupiah(x.amount)}</p>
-                    <span className={`text-xs font-semibold ${lunas ? "text-pos" : "text-ink/60"}`}>{lunas ? "Lunas" : "Belum lunas"}</span>
+                    <span className={`text-xs font-semibold ${lunas ? "text-pos" : "text-ink/60"}`}>{lunas ? "Lunas" : cicilan ? `Sisa ${formatRupiah(remainingOf(x))}` : "Belum Lunas"}</span>
                   </div>
                 </div>
+                {cicilan && (
+                  <div className="mt-3" aria-label={`Terbayar ${formatRupiah(paid)} dari ${formatRupiah(x.amount)}`}>
+                    <div className="h-1.5 overflow-hidden rounded-full bg-ink/10"><div className="h-full rounded-full bg-pos transition-all duration-500" style={{ width: `${Math.min(100, (paid / x.amount) * 100)}%` }} /></div>
+                    <p className="mt-1 text-xs text-ink/60">Terbayar {formatRupiah(paid)}</p>
+                  </div>
+                )}
                 {x.note && <p className="mt-2 text-sm text-ink/70">{x.note}</p>}
                 <div className="mt-3 flex gap-2 text-sm">
                   <button onClick={() => run(() => d.update(x.id, { settled: !lunas }))} className="flex items-center gap-1 rounded-lg bg-pos/10 px-3 py-1.5 font-semibold text-pos transition active:scale-95">
                     {lunas ? <><Undo2 className="size-4" />Batal lunas</> : <><Check className="size-4" />Tandai lunas</>}
                   </button>
+                  <button onClick={() => setPayFor(x.id)} className="flex items-center gap-1 rounded-lg px-3 py-1.5 transition hover:bg-ink/10"><Wallet className="size-4" />Cicilan</button>
                   <button onClick={() => setForm({ open: true, debt: x })} className="flex items-center gap-1 rounded-lg px-3 py-1.5 transition hover:bg-ink/10"><Pencil className="size-4" />Edit</button>
                   <button onClick={() => setToDelete(x)} className="ml-auto flex items-center gap-1 rounded-lg px-3 py-1.5 text-neg transition hover:bg-neg/10"><Trash2 className="size-4" />Hapus</button>
                 </div>
@@ -149,6 +160,15 @@ export default function Dashboard() {
         <DebtForm key={form.debt?.id ?? "new"} initial={form.debt} onClose={() => setForm({ open: false })}
           onSubmit={(v) => (form.debt ? d.update(form.debt.id, v) : d.create(v))} />
       )}
+
+      {payFor && (() => {
+        const debt = d.list?.find((x) => x.id === payFor);
+        return debt ? (
+          <PaymentSheet debt={debt} onClose={() => setPayFor(null)}
+            onAdd={(v) => d.addPayment(debt.id, v)} onRemove={(pid) => d.removePayment(debt.id, pid)} />
+        ) : null;
+        })
+      ()}
 
       {toDelete && (
         <div className="fixed inset-0 z-20 flex items-end bg-ink/50 sm:items-center sm:justify-center" onClick={() => setToDelete(null)}>

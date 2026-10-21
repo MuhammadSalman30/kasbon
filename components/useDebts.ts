@@ -1,6 +1,6 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
-import type { Debt, DebtInput } from "@/lib/debt";
+import { remainingOf, type Debt, type DebtInput, type PaymentInput } from "@/lib/debt";
 
 export interface Filters { status: "all" | "unsettled" | "settled"; type: "all" | "owed_to_me" | "i_owe" }
 
@@ -29,10 +29,12 @@ export function useDebts(filters: Filters) {
   const mutate = async (fn: () => Promise<unknown>) => { await fn(); await load(); };
   return {
     list, error, reload: load,
-    owedToMe: all.filter((d) => d.type === "owed_to_me").reduce((s, d) => s + d.amount, 0),
-    iOwe: all.filter((d) => d.type === "i_owe").reduce((s, d) => s + d.amount, 0),
+    owedToMe: all.filter((d) => d.type === "owed_to_me").reduce((s, d) => s + remainingOf(d), 0),
+    iOwe: all.filter((d) => d.type === "i_owe").reduce((s, d) => s + remainingOf(d), 0),
     create: (b: DebtInput) => mutate(() => call("/api/debts", { method: "POST", body: JSON.stringify(b) })),
     update: (id: string, b: Partial<DebtInput> & { settled?: boolean }) => mutate(() => call(`/api/debts/${id}`, { method: "PATCH", body: JSON.stringify(b) })),
+        addPayment: (id: string, b: PaymentInput) => mutate(() => call(`/api/debts/${id}/payments`, { method: "POST", body: JSON.stringify(b) })),
+    removePayment: (id: string, paymentId: string) => mutate(() => call(`/api/debts/${id}/payments/${paymentId}`, { method: "DELETE" })),
     remove: (id: string) => mutate(() => call(`/api/debts/${id}`, { method: "DELETE" })),
   };
 }
