@@ -128,7 +128,7 @@ export default function Dashboard() {
                   </div>
                   <div className="text-right">
                     <p className={`font-extrabold ${mine ? "text-pos" : "text-neg"}`}>{formatRupiah(x.amount)}</p>
-                    <span className={`text-xs font-semibold ${lunas ? "text-pos" : "text-ink/60"}`}>{lunas ? "Lunas" : cicilan ? `Sisa ${formatRupiah(remainingOf(x))}` : "Belum Lunas"}</span>
+                    <span className={`text-xs font-bold ${lunas ? "text-pos" : "text-ink/80"}`}>{lunas ? "Lunas" : cicilan ? `Sisa ${formatRupiah(remainingOf(x))}` : "Belum Lunas"}</span>
                   </div>
                 </div>
                 {cicilan && (
